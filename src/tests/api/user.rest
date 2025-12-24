@@ -6,7 +6,9 @@ POST http://localhost:3000/users
 Content-Type: application/json
 
 {
-    "name": "Bob",
-    "email": "bob@example.com"
+    "name": "mail",
+    "email": "mail@example.com"
 }
 
+### DELETE request to delete a user
+DELETE  http://localhost:3000/users/3
