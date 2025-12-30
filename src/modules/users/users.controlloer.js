@@ -1,40 +1,68 @@
-import { users } from "../../mock-db/user.js";
+import { users } from "../../mock-db/users.js";
 import { User } from "./users.model.js";
 
+// 🟡 API v1 
+// ❌ route handler: get all users (mock)
+export const getUsers1 = (req, res) => {
+  res.status(200).json(users);
+  //   console.log(res);
+};
+
+// ❌ route handler: delete a user (mock)
+export const deleteUser1 = (req, res) => {
+  const userId = req.params.id;
+
+  const userIndex = users.findIndex((user) => user.id === userId);
+
+  if (userIndex !== -1) {
+    users.splice(userIndex, 1);
+
+    res.status(200).send(`User with ID ${userId} deleted ✅`);
+  } else {
+    res.status(404).send("User not found.");
+  }
+};
+
+// ❌ route handler: create a new user (mock)
+export const createUser1 = (req, res) => {
+  const { name, email } = req.body;
+
+  const newUser = {
+    id: String(users.length + 1),
+    name: name,
+    email: email,
+  };
+
+  users.push(newUser);
+
+  res.status(201).json(newUser);
+};
+
+// 🟢 API v2 
 // ✅ route handler: GET a single user by id from the database
-export const getUser2 = async (req, res) => {
+export const getUser2 = async (req, res, next) => {
   const { id } = req.params;
 
   try {
     const doc = await User.findById(id).select("-password");
-
     if (!doc) {
-      return res.status(404).json({
-        success: false,
-        error: "User not found...",
-      });
+      const error = new Error("User not found");
+      return next(error);
     }
-
     return res.status(200).json({
       success: true,
       data: doc,
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: "Failed to get a user...",
-    });
+    error.status = 500;
+    error.name = error.name || "DatabaseError";
+    error.message = error.message || "Failed to get a user";
+    return next(error);
   }
 };
 
-//❌ route handler: get all users (mock)
-export const getUsers1 = (req, res) => {
-  res.status(200).json(users);
-  //console.log(res);
-};
-
-// ✅route handler: grt all users from thedatabase
-export const getUsers2 = async (req, res) => {
+// ✅ route handler: get all users from the database
+export const getUsers2 = async (req, res, next) => {
   try {
     const users = await User.find().select("-password");
     return res.status(200).json({
@@ -42,43 +70,21 @@ export const getUsers2 = async (req, res) => {
       data: users,
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: "faild to get users...",
-    });
+    // error.name = error.name || "DatabaseError";
+    // error.status = 500;
+    return next(error);
   }
-  //console.log(res);
 };
 
-// ❌route handler: delete a user (mock)
-export const deleteUser1 = (req, res) => {
-  (req, res) => {
-    const userId = req.params.id;
-
-    const userIndex = users.findIndex((user) => user.id === userId);
-
-    if (userIndex !== -1) {
-      users.splice(userIndex, 1);
-
-      res.status(200).send(`User with ID ${userId} deleted ✅`);
-    } else {
-      res.status(404).send("User not found.");
-    }
-  };
-};
-
-//✅✅ route handler: delete a  user in the database
-export const deleteUser2 = async (req, res) => {
+// ✅ route handler: delete a user in the database
+export const deleteUser2 = async (req, res, next) => {
   const { id } = req.params;
-
   try {
     const deleted = await User.findByIdAndDelete(id);
 
     if (!deleted) {
-      return res.status(404).json({
-        success: false,
-        error: "User not found...",
-      });
+      const error = new Error("User not found");
+      return next(error);
     }
 
     return res.status(200).json({
@@ -86,39 +92,19 @@ export const deleteUser2 = async (req, res) => {
       data: null,
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: "Faileld to delete user...",
-    });
+    return next(error);
   }
 };
 
-// ❌route handler: create a new user (mock)
-export const createUser1 = (req, res) => {
-  (req, res) => {
-    const { name, email } = req.body;
-
-    const newUser = {
-      id: String(users.length + 1),
-      name: name,
-      email: email,
-    };
-    users.push(newUser);
-
-    res.status(201).json(newUser);
-  };
-};
-
-//✅✅ route handler: create a new user in the database
-export const createUser2 = async (req, res) => {
+// ✅ route handler: create a new user in the database
+export const createUser2 = async (req, res, next) => {
   const { username, email, password, role } = req.body;
 
   if (!username || !email || !password) {
-    return res.status(400).json({
-      success: false,
-      error: "username, email, and password and password are required",
-      //ข้อมูลที่ส่งกลับไปกลับ res
-    });
+    const error = new Error("username, email, and password are required");
+    error.name = "ValidationError";
+    error.status = 400;
+    return next(error);
   }
 
   try {
@@ -133,22 +119,19 @@ export const createUser2 = async (req, res) => {
     });
   } catch (error) {
     if (error.code === 11000) {
-      return res.status(409).json({
-        success: false,
-        error: "Email already in use!",
-      });
+      error.status = 409;
+      error.name = "DuplicateKeyError";
+      error.message = "Email already in use";
     }
-
-    return res.status(500).json({
-      success: false,
-      error: "Fail to create user...",
-    });
+    error.status = 500;
+    error.name = error.name || "DatabaseError";
+    error.message = error.message || "Failed to create a user";
+    return next(error);
   }
 };
 
-//
 // ✅ route handler: update a user in the database
-export const updateUser2 = async (req, res) => {
+export const updateUser2 = async (req, res, next) => {
   const { id } = req.params;
 
   const body = req.body;
@@ -157,10 +140,9 @@ export const updateUser2 = async (req, res) => {
     const updated = await User.findByIdAndUpdate(id, body);
 
     if (!updated) {
-      return res.status(404).json({
-        success: false,
-        error: "User not found...",
-      });
+      const error = new Error("User not found...");
+
+      return next(error);
     }
 
     const safe = updated.toObject();
@@ -172,15 +154,8 @@ export const updateUser2 = async (req, res) => {
     });
   } catch (error) {
     if (error.code === 11000) {
-      return res.status(409).json({
-        success: false,
-        error: "Email already in use!",
-      });
+      return next(error);
     }
-
-    return res.status(500).json({
-      success: false,
-      error: "Failed to update user...",
-    });
+    return next(error);
   }
 };
