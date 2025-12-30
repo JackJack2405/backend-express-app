@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
-// data model is created from a data schema
-//ใส่เพื่อตรวจสอบข้อมูลก่อนนำข้อมูลเข้า
+// a data model is created from a data schema
+
 const userSchema = new mongoose.Schema(
   {
     username: { type: String, required: true, trim: true },
@@ -14,6 +14,6 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// mongobd will automatically create users collection
+// mongodb will automatically create users collection
 
 export const User = mongoose.model("User", userSchema);

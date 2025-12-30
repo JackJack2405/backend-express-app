@@ -3,7 +3,7 @@ import {
   createUser1,
   deleteUser1,
   getUsers1,
-} from "../../modules/users/users.controlloer.js";
+} from "../../modules/users/users.controller.js";
 
 export const router = Router();
 
