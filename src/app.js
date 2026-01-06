@@ -1,6 +1,8 @@
 import express from "express";
+
 import cors from "cors";
 import { router as apiRouter, router } from "./routes/index.js";
+import cookieParser from "cookie-parser";
 
 export const app =  express();
 
@@ -12,11 +14,16 @@ const corsOptions = {
         "http://localhost:5175",
         "https://frontend-app-theta-teal.vercel.app",
     ],//frontend domain
+    credentials: true
 };
 
 app.use(cors(corsOptions));
 
 app.use(express.json());
+
+// Middle to parse cookies (required for cookie-base auth)
+app.use(cookieParser());
+
 app.get("/", (req, res) => {
     res.send("Hello World!");
 })
